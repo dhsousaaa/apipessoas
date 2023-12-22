@@ -20,25 +20,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/api/status', [ApiController::class, 'index'])->name('api.index');
-
-Route::post('/api', [ApiController::class, 'store'])->name('api.store');
-Route::get('/api', function () {
-    return response()->json(['error' => 'Método não permitido'], Response::HTTP_METHOD_NOT_ALLOWED);
-});
-Route::put('/api', function () {
-    return response()->json(['error' => 'Método não permitido'], Response::HTTP_METHOD_NOT_ALLOWED);
-});
-Route::delete('/api', function () {
-    return response()->json(['error' => 'Método não permitido'], Response::HTTP_METHOD_NOT_ALLOWED);
-});
-Route::post('/api/{id}', function () {
-    return response()->json(['error' => 'Método não permitido'], Response::HTTP_METHOD_NOT_ALLOWED);
-});
-Route::get('/api/{id}', [ApiController::class, 'show'])->name('api.show');
-Route::put('/api/{id}', [ApiController::class, 'update'])->name('api.update');
-Route::delete('/api/{id}', [ApiController::class, 'destroy'])->name('api.destroy');
-
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
