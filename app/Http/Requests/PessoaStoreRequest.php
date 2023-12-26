@@ -26,8 +26,24 @@ class PessoaStoreRequest extends FormRequest
             'sobrenome' => 'required|string|max:20',
             'email' => 'required|email|unique:pessoas,email',
             'data_nascimento' => 'required|date_format:Y-m-d',
-            'endereco' => 'required|string',
-            'telefone' => 'required|string',
+            'endereco' => 'required|string|max:100',
+            'telefone' => 'required|string|max:20',
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'nome.required' => 'O nome não foi informado.',
+            'nome.max' => 'O nome não pode ultrapassar de 20 caracteres.',
+            'sobrenome.required' => 'O sobrenome não foi informado.',
+            'sobrenome.max' => 'O sobrenome não pode ultrapassar de 20 caracteres.',
+            'data_nascimento.required' => 'Data de nascimento não foi informada.',
+            'data_nascimento.date_format' => 'Data de nascimento deve estar no formato Y-m-d.',
+            'telefone.max' => 'O telefone não pode ultrapassar de 20 caracteres.',
+            'telefone.required' => 'O telefone não foi informado.',
+            'endereco.max' => 'O endereço não pode ultrapassar de 100 caracteres.',
+            'endereco.required' => 'O endereço não foi informado.',
         ];
     }
 }
