@@ -2,14 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pessoa;
+use App\Http\Requests\PessoaStoreRequest;
 use Exception;
+use App\Models\User;
+use App\Models\Pessoa;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use App\Traits\ApiResponseTrait;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\UsuarioTokenRequest;
+use App\Http\Requests\UsuarioRegisterRequest;
+use Symfony\Component\HttpFoundation\Response;
 
 class ApiController extends Controller
 {
+
+    use ApiResponseTrait;
+    
     /**
      * Display a listing of the resource.
      */
@@ -21,34 +31,79 @@ class ApiController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Registrar um usuário para usar API
      */
-    public function store(Request $request)
-    {
+    public function register(UsuarioRegisterRequest $request)
+    {   
         try {
-            // Validação dos dados
-            $request->validate([
-                'nome' => 'required|string',
-                'sobrenome' => 'required|string',
-                'email' => 'required|email|unique:pessoas,email',
-                'data_nascimento' => 'required|date_format:Y-m-d',
-                'endereco' => 'required|string',
-                'telefone' => 'required|string',
-            ]);
-
-            // Criação da pessoa
-            $pessoa = Pessoa::create($request->all());
-
-            // Resposta de sucesso (pode ser personalizada conforme necessário)
-            return response()->json(
-                [
-                    'message' => 'Pessoa criada com sucesso',
-                    'data' => $pessoa
-                ],
+            $payload = $request->all();
+            $payload['password'] = Hash::make($payload['password']);
+            $usuario = User::create($request->all());
+    
+    
+            return $this->success(
+                $usuario,
+                'Usuário criado com sucesso.',
                 Response::HTTP_CREATED
             );
         } catch (\Throwable $th) {
-            return response()->json(['errors' => $th->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->error(
+                "Erro para criar usuário, motivo: {$th->getMessage()}",
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+    }
+
+    /**
+     * Criar um novo token para pode realizar request
+     */
+    public function token(UsuarioTokenRequest $request)
+    {
+        try {
+            $payload = $request->all();
+            if (!Auth::attempt($payload)) {
+                throw new Exception('Credencias não encontradas.', Response::HTTP_UNAUTHORIZED);
+            }
+
+            $user = auth()->user();
+
+            return $this->success(
+                [
+                    'token' => $user->createToken('API Token')->plainTextToken,
+                    'user' => $user
+                ],
+                'Token criado com sucesso.',
+                Response::HTTP_CREATED
+            );
+            
+        } catch (\Throwable $th) {
+            return $this->error(
+                "Erro para criar token, motivo: {$th->getMessage()}",
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(PessoaStoreRequest $request)
+    {
+        try {
+            $payload = $request->all();
+            $payload['usuario_id'] = auth()->user()->id;
+
+            // Criação da pessoa
+            $pessoa = Pessoa::create($payload);
+
+            // Resposta de sucesso (pode ser personalizada conforme necessário)
+            return $this->success(
+                $pessoa,
+                'Pessoa criada com sucesso',
+                Response::HTTP_CREATED
+            );
+        } catch (\Throwable $th) {
+            return $this->error($th->getMessage(), Response::HTTP_UNPROCESSABLE_ENTITY);
         }
     }
 
@@ -63,9 +118,9 @@ class ApiController extends Controller
             if (!$pessoa) {
                 throw new Exception('Pessoa não encontrada.', Response::HTTP_NOT_FOUND);
             }
-            return response()->json(['data' => $pessoa]);
+            return $this->success($pessoa);
         } catch (\Throwable $th) {
-            return response()->json(['errors' => $th->getMessage()]);
+            return $this->error($th->getMessage());
         }
     }
 
@@ -87,7 +142,7 @@ class ApiController extends Controller
 
             // Verifica se a validação falhou
             if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
+                return $this->error($validator->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
             $pessoa = Pessoa::find($id);
@@ -97,14 +152,12 @@ class ApiController extends Controller
             }
 
             $pessoa->update($campos);
-            return response()->json(
-                [
-                    'message' => 'Pessoa atualizada com sucesso',
-                    'data' => $pessoa
-                ]
+            return $this->success(
+                $pessoa,
+                'Pessoa atualizada com sucesso'
             );
         } catch (\Throwable $th) {
-            return response()->json(['errors' => $th->getMessage()]);
+            return $this->error($th->getMessage());
         }
     }
 
@@ -119,9 +172,9 @@ class ApiController extends Controller
             if (!$pessoa) {
                 throw new Exception('Pessoa não encontrada.', Response::HTTP_NOT_FOUND);
             }
-            return response()->json(['message' => 'Pessoa deletada com sucesso']);
+            return $this->success([], 'Pessoa deletada com sucesso');
         } catch (\Throwable $th) {
-            return response()->json(['errors' => $th->getMessage()]);
+            return $this->error($th->getMessage());
         }
     }
 }

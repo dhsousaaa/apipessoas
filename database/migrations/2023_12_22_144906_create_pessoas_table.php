@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('pessoas', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('usuario_id');
+            $table->foreign('usuario_id')->references('id')->on('users');
             $table->string('nome');
             $table->string('sobrenome');
             $table->string('email')->unique();
